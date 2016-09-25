@@ -18,7 +18,7 @@
 
 require 'kitchen'
 require 'kitchen/driver/ScalrAPI'
-require "kitchen/driver/vagrant_version"
+require "kitchen/driver/scalr_version"
 
 module Kitchen
 
@@ -33,7 +33,7 @@ module Kitchen
 
       plugin_version Kitchen::Driver::SCALR_VERSION
 
-      default_config :scalr_api_url, 'https://demo.scalr.com'
+      default_config :scalr_api_url, ''
 
       default_config :scalr_api_key_id, ''
 
@@ -49,16 +49,16 @@ module Kitchen
 
       default_config :scalr_server_status_polling_timeout, 600
 
-      default_config :scalr_server_image, 'base-ubuntu1404-us-west-1-05062015'
+      default_config :scalr_server_image, ''
 
-      default_config :scalr_server_instanceType, 'm3.medium'
+      default_config :scalr_server_instanceType, ''
 
       def create(state)
         #Create a Scalr API object
         scalr_api = ScalrAPI.new(config[:scalr_api_url], config[:scalr_api_key_id], config[:scalr_api_key_secret])
         #Create a farm
-        suuid = SecureRandom.uuid
-        uuid = 'KITCHEN_FARM_' + instance.name + "_" + suuid
+        state[:suuid] = SecureRandom.uuid
+        uuid = 'KITCHEN_FARM_' + instance.name + "_" + state[:suuid]
         createFarmObject = {
           'name' => uuid,
           'description' => 'Test Kitchen Farm',
@@ -68,65 +68,140 @@ module Kitchen
         }
         puts 'Creating farm with name: %s' % [uuid]
         response = scalr_api.create('/api/v1beta0/user/%s/farms/' % [config[:scalr_env_id] ], createFarmObject)
-        farmId = response['id']
-        puts 'Success: farmId is %d' % [farmId]
+        state[:farmId] = response['id']
+        puts 'Success: farmId is %d' % [state[:farmId]]
         #Get the imageId for the provided image
         puts 'Getting the imageId for image %s' % [config[:scalr_server_image]]
         response = scalr_api.list('/api/v1beta0/user/%s/images/?name=%s' % [config[:scalr_env_id], config[:scalr_server_image] ])
         if response.size == 0 then
           raise 'No matching image was found in this environment!'
         end
-        imageId = response[0]['id']
-        imageOsId = response[0]['os']['id']
-        puts 'The image id is %s' % [imageId]
+        state[:imageId] = response[0]['id']
+        state[:imageOsId] = response[0]['os']['id']
+        state[:imagePlatform] = response[0]['cloudPlatform']
+        state[:imageLocation] = response[0]['cloudLocation']
+        puts 'The image id is %s' % [state[:imageId]]
+        puts 'The image os id is %s' % [state[:imageOsId]]
+        puts 'The image platform is %s' % [state[:imagePlatform]]
+        puts 'The image Location is %s' % [state[:imageLocation]]
         #Create a matching role on the fly
-        ruuid = 'KITCHEN_ROLE_' + instance.name + "_" + suuid
+        ruuid = 'KITCHEN-ROLE-' + state[:suuid]
         roleObject = {
-          'name' => ruuid,
-          'os' => {
-            'id' => imageOsId
-          },
-          'category' => {
-            'id' => 1
-          }
+          "builtinAutomation" => ["base"], 
+          "category" => {
+                          "id" => 1
+                        }, 
+          "deprecated" => false, 
+          "description" => "test kitchen role", 
+          "name" => ruuid, 
+          "os" => {
+                    "id" => state[:imageOsId]
+                  }, 
+          "quickStart" => false,  
+          "useScalrAgent" => true
         }
         puts 'Creating a role with name %s' % [ruuid]
-        reponse = scalr_api.create('/api/v1beta0/user/%s/roles/' % [config[:scalr_env_id] ], roleObject)
-        roleId = response['id']
-        puts 'The role id is %d' % [roleId]
+        response = scalr_api.create('/api/v1beta0/user/%s/roles/' % [config[:scalr_env_id] ], roleObject)
+        state[:roleId] = response['id']
+        puts 'The role id is %d' % [state[:roleId]]
         #Create a RoleImage matching
         roleImageObject = {
           "image" => {
-            "id" => imageId,
+            "id" => state[:imageId],
           },
           "role" => {
-            "id" => roleId
+            "id" => state[:roleId]
           }
         }
-        response = scalr_api.create('/api/v1beta0/user/%s/roles/%d/images/' % [config[:scalr_env_id], roleId], roleImageObject)
+        response = scalr_api.create('/api/v1beta0/user/%s/roles/%d/images/' % [config[:scalr_env_id], state[:roleId]], roleImageObject)
         puts "RoleImage association created"
         #Now create the farm role object
         puts "Creating the Farm Role"
-        fruuid = "KITCHEN_FARM_ROLE_" + instance.name + "_" + uuid
+        fruuid = "KITCHEN-FARM-ROLE-" + state[:suuid]
         farmRoleObject = {
-          "alias" => fruuid,
+          "alias" => ruuid,
           "placement" => {
-
+            "placementConfigurationType" => placementConfigurationType(state[:imagePlatform]),
+            "region" => state[:imageLocation]
           },
           "instance" => {
-
+            "instanceConfigurationType" => instanceConfigurationType(state[:imagePlatform]),
+            "instanceType" => {
+              "id" => config[:scalr_server_instanceType]
+            }
           },
-          "platform" => "ec2",
+          "platform" => state[:imagePlatform],
           "role" => {
-
+            "id" => state[:roleId]
+          },
+          "scaling" => {
+            "considerSuspendedServers" => "running", 
+            "enabled" => true, 
+            "maxInstances" => 1, 
+            "minInstances" => 1,  
+            "scalingBehavior" => "launch-terminate",
+            "rules" => []
           }
         }        
-        response = scalr_api.create('/api/v1beta0/user/%s/farms/%d/farm-roles/' % [config[:scalr_env_id], farmId], farmRoleObject)
+        response = scalr_api.create('/api/v1beta0/user/%s/farms/%d/farm-roles/' % [config[:scalr_env_id], state[:farmId]], farmRoleObject)
         puts "Farm Role created"
+        state[:farmRoleId] = response['id']
+        #Start the farm now
+        response = scalr_api.post('/api/v1beta0/user/%s/farms/%d/actions/launch/' % [config[:scalr_env_id], state[:farmId]], {})
+        #Keep polling for server status
+        wait_for_status(scalr_api, state, 'running')
+        #Finally get the IP address
+        response = scalr_api.list('/api/v1beta0/user/%s/farms/%d/servers/' % [config[:scalr_env_id], state[:farmId]] )
+        if response.size == 0 then
+          raise "No running server in the farm!"
+        end
+        state[:hostname] = response[0]['publicIp'][0]
+        state[:port] = 22
+        state[:username] = 'root'
+        #state[:password] = 
+        state[:ssh_key] = config[:scalr_ssh_key_filename]
+        #state[:proxy_command] = 
+        #state[:rdp_port] = 
       end
 
       def destroy(state)
+        puts "To be done"
       end
+
+      def wait_for_status(scalr_api,state, status)
+        elapsed_time = 0
+        puts 'Waiting for server to be %s.' % [status]
+        while elapsed_time < config[:scalr_server_status_polling_timeout] do
+          response = scalr_api.list('/api/v1beta0/user/%s/farms/%d/servers/' % [config[:scalr_env_id], state[:farmId]] )
+          if (response.size > 0 && response[0]['status'] == status) then
+            puts 'Server is %s!' % [response[0]['status']]
+            return
+          end
+          if (response.size > 0) then
+            puts 'Server is still %s.' % [response[0]['scalrAgent']['reachabilityStatus']['status']]
+          end
+          sleep config[:scalr_server_status_polling_period]
+          elapsed_time += config[:scalr_server_status_polling_period]
+          puts "Elapsed time: %d seconds. Still polling for server status" % [elapsed_time]
+        end
+        raise "Server status timeout!"
+      end
+
+      def placementConfigurationType(cloudPlatform)
+        return {
+          "ec2" => "AwsClassicPlacementConfiguration",
+          "openstack" => "OpenStackPlacementConfiguration",
+          "gce" => "GcePlacementConfiguration",
+          "cloudstack" => "CloudStackPlacementConfiguration"
+          }[cloudPlatform]
+      end
+
+      def instanceConfigurationType(cloudPlatform)
+        return {
+          "ec2" => "AwsInstanceConfiguration"
+          }[cloudPlatform]
+        end
+
     end
   end
 end

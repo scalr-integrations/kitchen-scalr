@@ -2,7 +2,7 @@ require 'uri'
 require 'time'
 require 'openssl'
 require 'base64'
-require 'rest_client'
+require 'rest-client'
 
 class ScalrAPI
 	
@@ -67,7 +67,7 @@ class ScalrAPI
 			headers['Content-Type'] = 'application/json'
 		end
 
-		response = RestClient::Request.execute(
+		response = ::RestClient::Request.execute(
 			:method => method, 
 			:url => @api_url + url,
 			:headers => headers,
