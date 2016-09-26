@@ -73,7 +73,9 @@ class ScalrAPI
 			:headers => headers,
 			:payload  => body
 		)
-		
+		if response == ""
+			response = "{}"
+		end
 		return JSON.parse(response)
 	
 	end

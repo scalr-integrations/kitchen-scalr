@@ -164,8 +164,62 @@ module Kitchen
         #state[:rdp_port] = 
       end
 
+      def cleanup_scalr(scalr_api, state)
+        puts "Starting the tear-down process"
+        if state.key?(:hostname)
+          puts "A running server is here, terminate the farm"
+          scalr_api.post('/api/v1beta0/user/%s/farms/%d/actions/terminate/' % [config[:scalr_env_id], state[:farmId]], {})
+          state.delete(:hostname)
+          state.delete(:port)
+          state.delete(:username)
+          state.delete(:ssh_key)
+        end
+        if state.key?(:farmRoleId)
+          puts "Now waiting until all the servers are terminated..."
+          wait_for_empty(scalr_api, '/api/v1beta0/user/%s/farms/%d/servers/' % [config[:scalr_env_id], state[:farmId]])
+          puts "...Done"
+          puts "Cleanup of the farm role..."
+          scalr_api.delete('/api/v1beta0/user/%s/farm-roles/%d/' % [config[:scalr_env_id], state[:farmRoleId]])
+          puts '...Done'
+          state.delete(:farmRoleId)
+        end
+        if state.key?(:roleId)
+          puts "Cleanup of the role..."
+          scalr_api.delete('/api/v1beta0/user/%s/roles/%s/' % [config[:scalr_env_id], state[:roleId]])
+          puts '...Done'
+          state.delete(:roleId)
+        end
+        if state.key?(:farmId)
+          puts "Cleanup of the farm..."
+          scalr_api.delete('/api/v1beta0/user/%s/farms/%d/' % [config[:scalr_env_id], state[:farmId]])
+          puts '...Done'
+          state.delete(:farmId)
+        end
+      end
+
+      def wait_for_empty(scalr_api, endpoint)
+        elapsed_time = 0
+        while elapsed_time < config[:scalr_server_status_polling_timeout] do
+          response = scalr_api.list(endpoint)
+          nbOfNonTerminatedServers = 0
+          for s in response
+            if s['status'] != 'terminated'
+              nbOfNonTerminatedServers += 1
+            end
+          end
+          if (nbOfNonTerminatedServers == 0) then
+            return
+          end
+          puts "Still %d servers." % [nbOfNonTerminatedServers]
+          sleep config[:scalr_server_status_polling_period]
+          elapsed_time += config[:scalr_server_status_polling_period]
+          puts "Elapsed time: %d seconds. Still polling for number of servers in farm" % [elapsed_time]
+        end
+        raise "Timeout! And some servers are still running...Try later"
+      end
       def destroy(state)
-        puts "To be done"
+        scalr_api = ScalrAPI.new(config[:scalr_api_url], config[:scalr_api_key_id], config[:scalr_api_key_secret])
+        cleanup_scalr(scalr_api, state)
       end
 
       def wait_for_status(scalr_api,state, status)
