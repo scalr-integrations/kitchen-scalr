@@ -20,7 +20,7 @@ require 'kitchen'
 require 'kitchen/driver/ScalrAPI'
 require "kitchen/driver/scalr_version"
 require "kitchen/driver/scalr_ssh_script_template"
-
+require "json"
 module Kitchen
 
   module Driver
@@ -86,9 +86,9 @@ module Kitchen
         end
         #Now create the farm role object
         puts "Creating the Farm Role"
-        fruuid = "KITCHEN-FARM-ROLE-" + state[:suuid]
+        fruuid = "KITCHEN-ROLE-" + state[:suuid]
         farmRoleObject = {
-          "alias" => ruuid,
+          "alias" => fruuid,
           "placement" => {
             "placementConfigurationType" => placementConfigurationType(state[:imagePlatform]),
             "region" => state[:imageLocation]
@@ -117,6 +117,7 @@ module Kitchen
         state[:farmRoleId] = response['id']
         #Start the farm now
         response = scalr_api.post('/api/v1beta0/user/%s/farms/%d/actions/launch/' % [config[:scalr_env_id], state[:farmId]], {})
+        state[:farmLaunched] = 1
         #Keep polling for server status
         wait_for_status(scalr_api, state, 'running')
         #Generate and upload credentials to the instance
@@ -137,13 +138,14 @@ module Kitchen
 
       def cleanup_scalr(scalr_api, state)
         puts "Starting the tear-down process"
-        if state.key?(:hostname)
+        if state.key?(:farmLaunched)
           puts "A running server is here, terminate the farm"
           scalr_api.post('/api/v1beta0/user/%s/farms/%d/actions/terminate/' % [config[:scalr_env_id], state[:farmId]], {})
           state.delete(:hostname)
           state.delete(:port)
           state.delete(:username)
           state.delete(:ssh_key)
+          state.delete(:farmLaunched)
         end
         if state.key?(:farmRoleId)
           puts "Now waiting until all the servers are terminated..."
@@ -154,7 +156,7 @@ module Kitchen
           puts '...Done'
           state.delete(:farmRoleId)
         end
-        if state.key?(:roleId) && config[:scalr_use_role] != -1
+        if state.key?(:roleId) && config[:scalr_use_role] == -1
           puts "Cleanup of the role..."
           scalr_api.delete('/api/v1beta0/user/%s/roles/%s/' % [config[:scalr_env_id], state[:roleId]])
           puts '...Done'
@@ -165,6 +167,19 @@ module Kitchen
           scalr_api.delete('/api/v1beta0/user/%s/farms/%d/' % [config[:scalr_env_id], state[:farmId]])
           puts '...Done'
           state.delete(:farmId)
+        end
+        if state.key?(:scriptId)
+          puts "Cleanup of the script..."
+          scalr_api.delete('/api/v1beta0/user/%s/scripts/%d/' % [config[:scalr_env_id], state[:scriptId]])
+          puts "...Done"
+          state.delete(:scriptId)
+        end
+        if state.key?(:keyfileName)
+          puts "Cleanup of the local keys..."
+          res = `rm -rf #{state[:keyfileName]}`
+          res = `rm -rf #{state[:keyfileName]}.pub`
+          puts "...Done"
+          state.delete(:scriptId)
         end
       end
 
@@ -286,7 +301,7 @@ module Kitchen
         puts "Generating a key named %s" % [keyfileName]
         res = `yes | ssh-keygen -q -f #{keyfileName} -N ""`
         f = File.open(keyfileName + ".pub")
-        scriptData = scalr_ssh_script % { ssh_pub_key => f.read }
+        scriptData = Kitchen::Driver::SCALR_SSH_SCRIPT % { :ssh_pub_key => f.read }
         f.close
         #Now create a script in Scalr
         puts "Creating a script in Scalr with this key"
@@ -299,6 +314,9 @@ module Kitchen
         puts "Script created with id %s" % [state[:scriptId]]
         #Now create a script version with the actual body
         puts "Creating a script version"
+        puts "Script content:"
+        puts scriptData
+        puts "End of script content"
         response = scalr_api.create('/api/v1beta0/user/%s/scripts/%d/script-versions/' % [config[:scalr_env_id], state[:scriptId]],
         {
           'body' => scriptData,
@@ -322,7 +340,7 @@ module Kitchen
         "Waiting for execution to be finished"
         while (elapsed_time < config[:scalr_server_status_polling_timeout]) do
           puts "%d seconds elapsed. Polling" % [elapsed_time]
-          response = scalr_api.get('/api/v1beta0/user/%s/script-executions/%s/' % [config[:scalr_env_id], state[:scriptExecutionId]])
+          response = scalr_api.fetch('/api/v1beta0/user/%s/script-executions/%s/' % [config[:scalr_env_id], state[:scriptExecutionId]])
           if (response['status'] == 'finished')
             puts "Script execution has finished."
             return
