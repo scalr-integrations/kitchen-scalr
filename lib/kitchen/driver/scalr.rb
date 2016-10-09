@@ -32,7 +32,7 @@ module Kitchen
     #
     # @author Mohammed HAWARI <mohammed@hawari.fr>
     class Scalr < Kitchen::Driver::Base
-      include CredentialsManager
+      extend CredentialsManager
 
       kitchen_driver_api_version 2
 
