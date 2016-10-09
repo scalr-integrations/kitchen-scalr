@@ -20,7 +20,10 @@ require 'kitchen'
 require 'kitchen/driver/ScalrAPI'
 require "kitchen/driver/scalr_version"
 require "kitchen/driver/scalr_ssh_script_template"
+require "kitchen/driver/scalr_cred"
 require "json"
+require 'os'
+
 module Kitchen
 
   module Driver
@@ -29,6 +32,7 @@ module Kitchen
     #
     # @author Mohammed HAWARI <mohammed@hawari.fr>
     class Scalr < Kitchen::Driver::Base
+      include CredentialsManager
 
       kitchen_driver_api_version 2
 
@@ -61,6 +65,11 @@ module Kitchen
       default_config :scalr_location, ''
 
       def create(state)
+      	if config[:scalr_api_key_id]==''
+      		#We have to find some other way of getting the credentials
+
+
+      	end
         #Create a Scalr API object
         scalr_api = ScalrAPI.new(config[:scalr_api_url], config[:scalr_api_key_id], config[:scalr_api_key_secret])
         #Create a farm
