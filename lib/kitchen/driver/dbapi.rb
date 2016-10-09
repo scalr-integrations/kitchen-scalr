@@ -66,12 +66,12 @@ BOOL WINAPI CryptProtectData(
   def encrypt plaintext, entropy=nil, flags = [], desc=nil
     ciphertext_blob = DataBlob.new
 
-    CryptProtectData(DataBlob.new plaintext,
+    CryptProtectData(DataBlob.new(plaintext),
                      desc,
                      entropy.nil? ? nil : DataBlob.new(entropy),
                      nil,
                      nil,
-                     flags.reduce(0, :|)
+                     flags.reduce(0, :|),
                      ciphertext_blob) or
       raise EncryptErorr
     
@@ -97,9 +97,9 @@ BOOL WINAPI CryptUnprotectData(
     plaintext_blob  = DataBlob.new
     desc = FFI::MemoryPointer.new(:pointer, 256)
 
-    CryptUnprotectData(DataBlob.new ciphertext,
+    CryptUnprotectData(DataBlob.new(ciphertext),
                        desc,
-                       DataBlob.new entropy,
+                       DataBlob.new(entropy),
                        nil,
                        nil,
                        flags.reduce(0, :|),

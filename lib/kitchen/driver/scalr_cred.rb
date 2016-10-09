@@ -1,11 +1,15 @@
 require 'os'
 require 'json'
-require 'kitchen/driver/dbapi.rb'
+if OS.windows? then
+  require 'kitchen/driver/dbapi.rb'
+end
 require 'io/console'
 module Kitchen
   module Driver
     module CredentialsManager
-      extend DPAPI
+      if OS.windows? then
+        extend DPAPI
+      end
       def loadCredentials()
         if OS.windows? then
           credentialsFilename = "\%APPDATA\%\\kitchen_scalr.cred"
@@ -15,7 +19,7 @@ module Kitchen
             decryptedJson = decrypt(encryptedCred)
             cred = JSON.parse(decryptedJson)
             config[:scalr_api_key_id] = cred['API_KEY_ID']
-            config[[:scalr_api_key_secret] = cred['API_KEY_SECRET']
+            config[:scalr_api_key_secret] = cred['API_KEY_SECRET']
           else
             #Prompt for credentials
             print 'Enter your API Key ID: '
@@ -30,7 +34,7 @@ module Kitchen
             encryptedCred = encrypt(decryptedJson)
             File.write(credentialsFilename, encryptedCred)
             config[:scalr_api_key_id] = cred['API_KEY_ID']
-            config[[:scalr_api_key_secret] = cred['API_KEY_SECRET']
+            config[:scalr_api_key_secret] = cred['API_KEY_SECRET']
           end
         else
           puts 'This OS is currently not supported'
