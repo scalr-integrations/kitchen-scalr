@@ -67,8 +67,7 @@ module Kitchen
       def create(state)
       	if config[:scalr_api_key_id]==''
       		#We have to find some other way of getting the credentials
-
-
+      		loadCredentials
       	end
         #Create a Scalr API object
         scalr_api = ScalrAPI.new(config[:scalr_api_url], config[:scalr_api_key_id], config[:scalr_api_key_secret])
