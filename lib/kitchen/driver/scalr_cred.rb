@@ -8,22 +8,22 @@ module Kitchen
   module Driver
     module CredentialsManager
       if OS.windows? then
-        extend DPAPI
+        include DPAPI
       end
       def loadCredentials()
         if OS.windows? then
-          credentialsFilename = "\%APPDATA\%\\kitchen_scalr.cred"
+          credentialsFilename = ENV['APPDATA'] + "\\kitchen_scalr.cred"
           if File.file?(credentialsFilename) then
             #Load existing credentials
-            encryptedCred = File.read(credentialsFilename)
+            encryptedCred = File.open(credentialsFilename, "rb") {|f| f.read}
             decryptedJson = decrypt(encryptedCred)
-            cred = JSON.parse(decryptedJson)
+            cred = JSON.parse(decryptedJson[0])
             config[:scalr_api_key_id] = cred['API_KEY_ID']
             config[:scalr_api_key_secret] = cred['API_KEY_SECRET']
           else
             #Prompt for credentials
             print 'Enter your API Key ID: '
-            apiKeyId = gets.chomp
+            apiKeyId = STDIN.gets.chomp
             print 'Enter you API Key secret: '
             apiKeySecret = STDIN.noecho(&:gets).chomp
             cred = {
@@ -32,7 +32,7 @@ module Kitchen
             }
             decryptedJson = cred.to_json
             encryptedCred = encrypt(decryptedJson)
-            File.write(credentialsFilename, encryptedCred)
+            File.binwrite(credentialsFilename, encryptedCred)
             config[:scalr_api_key_id] = cred['API_KEY_ID']
             config[:scalr_api_key_secret] = cred['API_KEY_SECRET']
           end

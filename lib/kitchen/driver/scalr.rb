@@ -32,7 +32,7 @@ module Kitchen
     #
     # @author Mohammed HAWARI <mohammed@hawari.fr>
     class Scalr < Kitchen::Driver::Base
-      extend CredentialsManager
+      include CredentialsManager
 
       kitchen_driver_api_version 2
 
@@ -66,8 +66,8 @@ module Kitchen
 
       def create(state)
       	if config[:scalr_api_key_id]==''
-      		#We have to find some other way of getting the credentials
-      		loadCredentials
+      	  #We have to find some other way of getting the credentials
+      	  loadCredentials
       	end
         #Create a Scalr API object
         scalr_api = ScalrAPI.new(config[:scalr_api_url], config[:scalr_api_key_id], config[:scalr_api_key_secret])
@@ -213,7 +213,11 @@ module Kitchen
       end
 
       def destroy(state)
-        scalr_api = ScalrAPI.new(config[:scalr_api_url], config[:scalr_api_key_id], config[:scalr_api_key_secret])
+        if config[:scalr_api_key_id]==''
+	  #We have to find some other way of getting the credentials
+	  loadCredentials
+	end
+	scalr_api = ScalrAPI.new(config[:scalr_api_url], config[:scalr_api_key_id], config[:scalr_api_key_secret])
         cleanup_scalr(scalr_api, state)
       end
 

@@ -23,7 +23,7 @@ typedef struct _CRYPTOAPI_BLOB {
            :pbData, :pointer
 
     def initialize blob=nil
-      super nil
+      super()
       self.data = blob unless blob.nil?
     end
     
