@@ -21,8 +21,10 @@ require 'kitchen/driver/ScalrAPI'
 require "kitchen/driver/scalr_version"
 require "kitchen/driver/scalr_ssh_script_template"
 require "kitchen/driver/scalr_cred"
+require "kitchen/driver/scalr_ps_script_template"
 require "json"
 require 'os'
+require 'securerandom'
 
 module Kitchen
 
@@ -308,19 +310,29 @@ module Kitchen
         state[:serverId] = response[0]['id']
         #Handle the Linux case
         #Generate a key
-        keyfileName = 'KEY_' + state[:suuid]
-        state[:keyfileName] = keyfileName
-        puts "Generating a key named %s" % [keyfileName]
-        res = `yes | ssh-keygen -q -f #{keyfileName} -N ""`
-        f = File.open(keyfileName + ".pub")
-        scriptData = Kitchen::Driver::SCALR_SSH_SCRIPT % { :ssh_pub_key => f.read }
-        f.close
+        if !windows_os? then
+          keyfileName = 'KEY_' + state[:suuid]
+          state[:keyfileName] = keyfileName
+          puts "Generating a key named %s" % [keyfileName]
+          res = `yes | ssh-keygen -q -f #{keyfileName} -N ""`
+          f = File.open(keyfileName + ".pub")
+          scriptData = Kitchen::Driver::SCALR_SSH_SCRIPT % { :ssh_pub_key => f.read }
+          f.close
+          state[:scriptOsType] = "linux"
+        else
+          instance_password = SecureRandom.urlsafe_base64(20)
+          instance_username = "adminchef"
+          scriptData = Kitchen::Driver::SCALR_PS_SCRIPT % {:username => instance_username, :password => instance_password}
+          state[:scriptOsType] = "windows"
+          state[:username] = instance_username
+          state[:password] = instance_password
+        end
         #Now create a script in Scalr
         puts "Creating a script in Scalr with this key"
         response = scalr_api.create('/api/v1beta0/user/%s/scripts/' % [config[:scalr_env_id]],
         {
           'name' => 'TestKitchenScript_%s' % [keyfileName],
-          'osType' => 'linux'
+          'osType' => state[:scriptOsType]
         })
         state[:scriptId] = response['id']
         puts "Script created with id %s" % [state[:scriptId]]
