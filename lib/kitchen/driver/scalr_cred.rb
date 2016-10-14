@@ -36,6 +36,26 @@ module Kitchen
             config[:scalr_api_key_id] = cred['API_KEY_ID']
             config[:scalr_api_key_secret] = cred['API_KEY_SECRET']
           end
+        elsif OS.mac? then
+          credentialsServiceName = "kitchen_scalr.cred"
+          #First, we detect if there is any password in the keychain
+          res = `security find-generic-password -l #{credentialsServiceName} -g >/dev/null 2>/dev/null; echo $?`
+          if res == '0' then
+            account = `security find-generic-password -l #{credentialsServiceName} | grep acct | awk -F"=" '{print $2}' | sed 's/"//g'`
+            password = `security find-generic-password -l #{credentialsServiceName} -g 2>&1 | grep password | awk '{print $2}' | sed 's/"//g'`
+            config[:scalr_api_key_id] = account
+            config[:scalr_api_key_secret] = password
+          else
+            #Prompt for credentials
+            print 'Enter your API Key ID: '
+            apiKeyId = gets.chomp
+            print 'Enter you API Key secret: '
+            apiKeySecret = STDIN.noecho(&:gets).chomp
+            #Save those in Keychain
+            res = `security add-generic-password -a #{apiKeyId} -s #{credentialsServiceName} -p #{apiKeySecret}`
+            config[:scalr_api_key_id] = apiKeyId
+            config[:scalr_api_key_secret] = apiKeySecret
+          end
         else
           puts 'This OS is currently not supported'
         end
