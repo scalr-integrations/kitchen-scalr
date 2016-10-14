@@ -2,13 +2,14 @@ module Kitchen
   module Driver
 
     SCALR_PS_SCRIPT = 
-    '$Username = "%{username}"
+    '#!powershell
+$Username = "%{username}"
 $Password = "%{password}"
 
 $group = "Administrators"
 
 $adsi = [ADSI]"WinNT://$env:COMPUTERNAME"
-$existing = $adsi.Children | where {$_.SchemaClassName -eq 'user' -and $_.Name -eq $Username }
+$existing = $adsi.Children | where {$_.SchemaClassName -eq \'user\' -and $_.Name -eq $Username }
 
 if ($existing -eq $null) {
 
