@@ -138,8 +138,8 @@ module Kitchen
           raise "No running server in the farm!"
         end
         state[:hostname] = response[0]['publicIp'][0]
-        state[:port] = 22
-        state[:username] = 'root'
+        #state[:port] = 22
+        #state[:username] = 'root'
         #state[:password] = 
         state[:ssh_key] = state[:keyfileName]
         #state[:proxy_command] = 
@@ -312,6 +312,7 @@ module Kitchen
         #Generate a key
         if !windows_os? then
           keyfileName = 'KEY_' + state[:suuid]
+          state[:username] = 'root'
           state[:keyfileName] = keyfileName
           puts "Generating a key named %s" % [keyfileName]
           res = `yes | ssh-keygen -q -f #{keyfileName} -N ""`
