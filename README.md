@@ -1,36 +1,54 @@
 # <a name="title"></a> Kitchen::Scalr
 
-A Test Kitchen Driver for Scalr.
-
-## <a name="requirements"></a> Requirements
-
-**TODO:** document any software or library prerequisites that are required to
-use this driver. Implement the `#verify_dependencies` method in your Driver
-class to enforce these requirements in code, if possible.
+A Test Kitchen Driver for Scalr. This driver creates an instance on Scalr by creating a Farm containing a single Farm Role and granting Test Kitchen access to the corresponding server. It can work in two modes:
+* **Image Mode:** (default) The user provides an image name and the driver will automatically create a role corresponding to this image as well as instanciate this role in a farm.
+* **Role Mode:** the user provides a role id and the driver will instanciate it in a farm
 
 ## <a name="installation"></a> Installation and Setup
 
 Please read the [Driver usage][driver_usage] page for more details.
 
 ## <a name="config"></a> Configuration
+### scalr_api_url
+**Required** This is the URL of the Scalr server that will be reached by the driver.
+### scalr_env_id
+**Required** This is a string corresponding to the environment id used by the plugin.
+### scalr_api_key_id and scalr_api_key_secret
+**Required except on macOS and Windows** These are respectively the API KEY ID and API KEY secret used to make the API calls to Scalr. This option **SHOULD NOT** be used on Windows and macOS because kitchen scalr integrates natively with these OSes to ensure secure storage of the Scalr credentials. In this case, Scalr will prompt for credentials at the first use, and memorize them for further calls.
+### scalr_project_id
+**Required** This is a string corresponding to the project identifier used to create the farm in Scalr. This is used in Scalr for accountability and cost management.
+### scalr_use_role
+**Optional** Setting this option to an integer corresponding to a role id will trigger Role mode with the provided role identifier. If this option is not set, the driver will work in Image mode.
+### scalr_server_image
+**Required in Image mode** This is a string corresponding to the image name used to instanciate the server.
+### scalr_server_instanceType
+**Required** This is a string corresponding to the instance type of the VMs in the underlying cloud. Example: 'm3.medium'
+### scalr_platform
+**Required in Role mode** This is the identifier of the underlying cloud platform. Examples: "ec2", "gce", "openstack".
+### scalr_location
+**Required** This is a string corresponding to the cloud location used to create the instance. Example: "us-east-1"
 
-**TODO:** Write descriptions of all configuration options
+## Configuration example
+    ---
+    driver:
+      name: scalr
 
-### <a name="config-require-chef-omnibus"></a> require\_chef\_omnibus
+    provisioner:
+      name: chef_zero
+    
+    verifier:
+      name: inspec
 
-Determines whether or not a Chef [Omnibus package][chef_omnibus_dl] will be
-installed. There are several different behaviors available:
-
-* `true` - the latest release will be installed. Subsequent converges
-  will skip re-installing if chef is present.
-* `latest` - the latest release will be installed. Subsequent converges
-  will always re-install even if chef is present.
-* `<VERSION_STRING>` (ex: `10.24.0`) - the desired version string will
-  be passed the the install.sh script. Subsequent converges will skip if
-  the installed version and the desired version match.
-* `false` or `nil` - no chef is installed.
-
-The default value is unset, or `nil`.
+    platforms:
+      - name: ubuntu-14.04
+        driver:
+          scalr_api_url: 'http://my.scalr.com'
+          scalr_env_id: '2'
+          scalr_project_id: '30c59dba-fc9b-4d0f-83ec-4b5043b12f72'
+          scalr_server_instanceType: 'm3.medium'
+          scalr_use_role: 12345
+          scalr_platform: 'ec2'
+          scalr_location: 'us-east-1'
 
 ## <a name="development"></a> Development
 
@@ -56,9 +74,9 @@ Created and maintained by [Mohammed HAWARI][author] (<mohammed@hawari.fr>)
 Apache 2.0 (see [LICENSE][license])
 
 
-[author]:           https://github.com/enter-github-user
-[issues]:           https://github.com/enter-github-user/kitchen-scalr/issues
-[license]:          https://github.com/enter-github-user/kitchen-scalr/blob/master/LICENSE
-[repo]:             https://github.com/enter-github-user/kitchen-scalr
-[driver_usage]:     http://docs.kitchen-ci.org/drivers/usage
+[author]:           https://github.com/momohawari
+[issues]:           https://github.com/momohawari/kitchen-scalr/issues
+[license]:          https://github.com/momohawari/kitchen-scalr/blob/master/LICENSE
+[repo]:             https://github.com/momohawari/kitchen-scalr
+[driver_usage]:     http://kitchen.ci/docs/getting-started/adding-platform
 [chef_omnibus_dl]:  http://www.chef.io/chef/install/
