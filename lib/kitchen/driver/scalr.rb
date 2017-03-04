@@ -71,6 +71,8 @@ module Kitchen
 
       default_config :scalr_base_farm_role, Hash.new
 
+      default_config :scalr_use_private_ip, false
+
       def create(state)
       	if config[:scalr_api_key_id]==''
       	  #We have to find some other way of getting the credentials
@@ -117,7 +119,11 @@ module Kitchen
         if response.size == 0 then
           raise "No running server in the farm!"
         end
-        state[:hostname] = response[0]['publicIp'][0]
+        if config[:scalr_use_private_ip] then
+          state[:hostname] = response[0]['privateIp'][0]
+        else
+          state[:hostname] = response[0]['publicIp'][0]
+        end
         state[:ssh_key] = state[:keyfileName]
         #state[:proxy_command] = 
         #state[:rdp_port] = 

@@ -28,7 +28,9 @@ Please read the [Driver usage][driver_usage] page for more details.
 ### scalr_location
 **Required in Role mode** This is a string corresponding to the cloud location used to create the instance. Example: "us-east-1"
 ### scalr_base_farm_role
-**Optional** This is a yaml representation of a Farm Role Object as described in the APIv2 in Scalr. When kitchen-scalr creates a server, it merges this object with the previously-described parameters and creates the corresponding Farm Role. This section can be used to configure Security Groups, Networking etc... You can put the same parameters there as the ones you would get with a `scalr-ctl farm-roles get`. 
+**Optional** This is a yaml representation of a Farm Role Object as described in the APIv2 in Scalr. When kitchen-scalr creates a server, it merges this object with the previously-described parameters and creates the corresponding Farm Role. This section can be used to configure Security Groups, Networking etc... You can put the same parameters there as the ones you would get with a `scalr-ctl farm-roles get`.
+### scalr_use_private_ip
+**Optional** If set to true, kitchen will use Scalr private ips for the instances, otherwise it will use the public one.
 ## Configuration example
     ---
     driver:
