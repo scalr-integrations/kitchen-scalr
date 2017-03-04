@@ -26,8 +26,9 @@ Please read the [Driver usage][driver_usage] page for more details.
 ### scalr_platform
 **Required in Role mode** This is the identifier of the underlying cloud platform. Examples: "ec2", "gce", "openstack".
 ### scalr_location
-**Required** This is a string corresponding to the cloud location used to create the instance. Example: "us-east-1"
-
+**Required in Role mode** This is a string corresponding to the cloud location used to create the instance. Example: "us-east-1"
+### scalr_base_farm_role
+**Optional** This is a yaml representation of a Farm Role Object as described in the APIv2 in Scalr. When kitchen-scalr creates a server, it merges this object with the previously-described parameters and creates the corresponding Farm Role. This section can be used to configure Security Groups, Networking etc... You can put the same parameters there as the ones you would get with a `scalr-ctl farm-roles get`. 
 ## Configuration example
     ---
     driver:
@@ -49,6 +50,12 @@ Please read the [Driver usage][driver_usage] page for more details.
           scalr_use_role: 12345
           scalr_platform: 'ec2'
           scalr_location: 'us-east-1'
+          scalr_base_farm_role:
+            security:
+              securityGroups:
+                - id: 'sg-3b3d9153'
+                - id: 'sg-349a765f'
+                - id: 'sg-4a9a7621'
 
 ## <a name="development"></a> Development
 

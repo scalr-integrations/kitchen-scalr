@@ -66,13 +66,18 @@ class ScalrAPI
 		if body != ""
 			headers['Content-Type'] = 'application/json'
 		end
-
-		response = ::RestClient::Request.execute(
-			:method => method, 
-			:url => @api_url + url,
-			:headers => headers,
-			:payload  => body
-		)
+		begin
+			response = ::RestClient::Request.execute(
+				:method => method, 
+				:url => @api_url + url,
+				:headers => headers,
+				:payload  => body
+			)
+		rescue RestClient::ExceptionWithResponse => e
+     		puts "Scalr server returned an error: "
+     		puts e.response
+     		raise e
+ 		end
 		if response == ""
 			response = "{}"
 		end

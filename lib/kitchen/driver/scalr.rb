@@ -22,6 +22,7 @@ require "kitchen/driver/scalr_version"
 require "kitchen/driver/scalr_ssh_script_template"
 require "kitchen/driver/scalr_cred"
 require "kitchen/driver/scalr_ps_script_template"
+require "kitchen/driver/scalr_farm_role"
 require "json"
 require 'os'
 require 'securerandom'
@@ -35,6 +36,8 @@ module Kitchen
     # @author Mohammed HAWARI <mohammed@hawari.fr>
     class Scalr < Kitchen::Driver::Base
       include CredentialsManager
+
+      include FarmRoleObjectBuilder
 
       kitchen_driver_api_version 2
 
@@ -66,6 +69,8 @@ module Kitchen
 
       default_config :scalr_location, ''
 
+      default_config :scalr_base_farm_role, Hash.new
+
       def create(state)
       	if config[:scalr_api_key_id]==''
       	  #We have to find some other way of getting the credentials
@@ -96,32 +101,7 @@ module Kitchen
         end
         #Now create the farm role object
         puts "Creating the Farm Role"
-        fruuid = "KITCHEN-ROLE-" + state[:suuid]
-        farmRoleObject = {
-          "alias" => fruuid,
-          "placement" => {
-            "placementConfigurationType" => placementConfigurationType(state[:imagePlatform]),
-            "region" => state[:imageLocation]
-          },
-          "instance" => {
-            "instanceConfigurationType" => instanceConfigurationType(state[:imagePlatform]),
-            "instanceType" => {
-              "id" => config[:scalr_server_instanceType]
-            }
-          },
-          "platform" => state[:imagePlatform],
-          "role" => {
-            "id" => state[:roleId]
-          },
-          "scaling" => {
-            "considerSuspendedServers" => "running", 
-            "enabled" => true, 
-            "maxInstances" => 1, 
-            "minInstances" => 1,  
-            "scalingBehavior" => "launch-terminate",
-            "rules" => []
-          }
-        }        
+        farmRoleObject = buildFarmRoleObject(state, config)
         response = scalr_api.create('/api/v1beta0/user/%s/farms/%d/farm-roles/' % [config[:scalr_env_id], state[:farmId]], farmRoleObject)
         puts "Farm Role created"
         state[:farmRoleId] = response['id']
@@ -138,9 +118,6 @@ module Kitchen
           raise "No running server in the farm!"
         end
         state[:hostname] = response[0]['publicIp'][0]
-        #state[:port] = 22
-        #state[:username] = 'root'
-        #state[:password] = 
         state[:ssh_key] = state[:keyfileName]
         #state[:proxy_command] = 
         #state[:rdp_port] = 
@@ -215,11 +192,11 @@ module Kitchen
       end
 
       def destroy(state)
-        if config[:scalr_api_key_id]==''
-	  #We have to find some other way of getting the credentials
-	  loadCredentials
-	end
-	scalr_api = ScalrAPI.new(config[:scalr_api_url], config[:scalr_api_key_id], config[:scalr_api_key_secret])
+        if config[:scalr_api_key_id]=='' then
+          #We have to find some other way of getting the credentials
+          loadCredentials
+        end
+        scalr_api = ScalrAPI.new(config[:scalr_api_url], config[:scalr_api_key_id], config[:scalr_api_key_secret])
         cleanup_scalr(scalr_api, state)
       end
 
@@ -240,21 +217,6 @@ module Kitchen
           puts "Elapsed time: %d seconds. Still polling for server status" % [elapsed_time]
         end
         raise "Server status timeout!"
-      end
-
-      def placementConfigurationType(cloudPlatform)
-        return {
-          "ec2" => "AwsClassicPlacementConfiguration",
-          "openstack" => "OpenStackPlacementConfiguration",
-          "gce" => "GcePlacementConfiguration",
-          "cloudstack" => "CloudStackPlacementConfiguration"
-          }[cloudPlatform]
-      end
-
-      def instanceConfigurationType(cloudPlatform)
-        return {
-          "ec2" => "AwsInstanceConfiguration"
-          }[cloudPlatform]
       end
 
       def createCustomRole(scalr_api,state)

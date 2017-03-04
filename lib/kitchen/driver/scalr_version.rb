@@ -21,6 +21,6 @@ module Kitchen
   module Driver
 
     # Version string for Scalr Kitchen driver
-    SCALR_VERSION = "0.1.0"
+    SCALR_VERSION = "0.2.0dev"
   end
 end
