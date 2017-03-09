@@ -26,7 +26,7 @@ require "kitchen/driver/scalr_farm_role"
 require "json"
 require 'os'
 require 'securerandom'
-
+require 'chef/mixin/deep_merge'
 module Kitchen
 
   module Driver
