@@ -14,7 +14,7 @@ Please read the [Driver usage][driver_usage] page for more details.
 ### scalr_env_id
 **Required** This is a string corresponding to the environment id used by the plugin.
 ### scalr_api_key_id and scalr_api_key_secret
-**Required except on macOS and Windows** These are respectively the API KEY ID and API KEY secret used to make the API calls to Scalr. This option **SHOULD NOT** be used on Windows and macOS because kitchen scalr integrates natively with these OSes to ensure secure storage of the Scalr credentials. In this case, Scalr will prompt for credentials at the first use, and memorize them for further calls.
+**Required except on macOS and Windows** These are respectively the API KEY ID and API KEY secret used to make the API calls to Scalr. This option **SHOULD NOT** be used on Windows and macOS because kitchen scalr integrates natively with these OSes to ensure secure storage of the Scalr credentials. In this case, Kitchen-Scalr will prompt for credentials at the first use, and memorize them for further calls.
 ### scalr_project_id
 **Required** This is a string corresponding to the project identifier used to create the farm in Scalr. This is used in Scalr for accountability and cost management.
 ### scalr_use_role
@@ -76,7 +76,8 @@ example:
 
 ## <a name="authors"></a> Authors
 
-Created and maintained by [Mohammed HAWARI][author] (<mohammed@hawari.fr>)
+- Created by [Mohammed HAWARI][author] (<mohammed@hawari.fr>)
+- Maintained by [Aloys AUGUSTIN][maintainer] (<aloys@scalr.com>)
 
 ## <a name="license"></a> License
 
@@ -84,8 +85,9 @@ Apache 2.0 (see [LICENSE][license])
 
 
 [author]:           https://github.com/momohawari
-[issues]:           https://github.com/momohawari/kitchen-scalr/issues
-[license]:          https://github.com/momohawari/kitchen-scalr/blob/master/LICENSE
-[repo]:             https://github.com/momohawari/kitchen-scalr
+[maintainer]:       https://github.com/aloysaugustin
+[issues]:           https://github.com/aloysaugustin/kitchen-scalr/issues
+[license]:          https://github.com/aloysaugustin/kitchen-scalr/blob/master/LICENSE
+[repo]:             https://github.com/aloysaugustin/kitchen-scalr
 [driver_usage]:     http://kitchen.ci/docs/getting-started/adding-platform
 [chef_omnibus_dl]:  http://www.chef.io/chef/install/
