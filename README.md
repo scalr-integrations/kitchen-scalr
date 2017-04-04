@@ -1,5 +1,7 @@
 # <a name="title"></a> Kitchen::Scalr
 
+[![Gem Version](https://badge.fury.io/rb/kitchen-scalr.svg)](https://badge.fury.io/rb/kitchen-scalr)
+
 A Test Kitchen Driver for Scalr. This driver creates an instance on Scalr by creating a Farm containing a single Farm Role and granting Test Kitchen access to the corresponding server. It can work in two modes:
 * **Image Mode:** (default) The user provides an image name and the driver will automatically create a role corresponding to this image as well as instanciate this role in a farm.
 * **Role Mode:** the user provides a role id and the driver will instanciate it in a farm
