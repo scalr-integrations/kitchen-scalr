@@ -45,6 +45,8 @@ module Kitchen
 
       default_config :scalr_api_url, ''
 
+      default_config :scalr_enable_ssh_root_login, false
+
       default_config :scalr_api_key_id, ''
 
       default_config :scalr_api_key_secret, ''
@@ -125,8 +127,8 @@ module Kitchen
           state[:hostname] = response[0]['publicIp'][0]
         end
         state[:ssh_key] = state[:keyfileName]
-        #state[:proxy_command] = 
-        #state[:rdp_port] = 
+        #state[:proxy_command] =
+        #state[:rdp_port] =
       end
 
       def cleanup_scalr(scalr_api, state)
@@ -243,17 +245,17 @@ module Kitchen
         #Create a matching role on the fly
         ruuid = 'KITCHEN-ROLE-' + state[:suuid]
         roleObject = {
-          "builtinAutomation" => ["base"], 
+          "builtinAutomation" => ["base"],
           "category" => {
                           "id" => 1
-                        }, 
-          "deprecated" => false, 
-          "description" => "test kitchen role", 
-          "name" => ruuid, 
+                        },
+          "deprecated" => false,
+          "description" => "test kitchen role",
+          "name" => ruuid,
           "os" => {
                     "id" => state[:imageOsId]
-                  }, 
-          "quickStart" => false,  
+                  },
+          "quickStart" => false,
           "useScalrAgent" => true
         }
         puts 'Creating a role with name %s' % [ruuid]
@@ -285,7 +287,11 @@ module Kitchen
           puts "Generating a key named %s" % [keyfileName]
           res = `yes | ssh-keygen -q -f #{keyfileName} -N ""`
           f = File.open(keyfileName + ".pub")
-          scriptData = Kitchen::Driver::SCALR_SSH_SCRIPT % { :ssh_pub_key => f.read }
+          if config[:scalr_enable_ssh_root_login]
+            scriptData = Kitchen::Driver::SCALR_SSH_ROOT_ENABLE_SCRIPT % { :ssh_pub_key => f.read }
+          else
+            scriptData = Kitchen::Driver::SCALR_SSH_SCRIPT % { :ssh_pub_key => f.read }
+          end
           f.close
           state[:scriptOsType] = "linux"
         else

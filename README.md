@@ -19,6 +19,8 @@ Please read the [Driver usage][driver_usage] page for more details.
 **Required except on macOS and Windows** These are respectively the API KEY ID and API KEY secret used to make the API calls to Scalr. This option **SHOULD NOT** be used on Windows and macOS because kitchen scalr integrates natively with these OSes to ensure secure storage of the Scalr credentials. In this case, Kitchen-Scalr will prompt for credentials at the first use, and memorize them for further calls.
 ### scalr_project_id
 **Required** This is a string corresponding to the project identifier used to create the farm in Scalr. This is used in Scalr for accountability and cost management.
+### scalr_enable_ssh_root_login
+**Optional** This is a boolean, default is 'false', that configures sshd to allow root logins and bounces the service during kitchen create.
 ### scalr_use_role
 **Optional** Setting this option to an integer corresponding to a role id will trigger Role mode with the provided role identifier. If this option is not set, the driver will work in Image mode.
 ### scalr_server_image
