@@ -19,8 +19,6 @@ Please read the [Driver usage][driver_usage] page for more details.
 **Required except on macOS and Windows** These are respectively the API KEY ID and API KEY secret used to make the API calls to Scalr. This option **SHOULD NOT** be used on Windows and macOS because kitchen scalr integrates natively with these OSes to ensure secure storage of the Scalr credentials. In this case, Kitchen-Scalr will prompt for credentials at the first use, and memorize them for further calls.
 ### scalr_project_id
 **Required** This is a string corresponding to the project identifier used to create the farm in Scalr. This is used in Scalr for accountability and cost management.
-### scalr_enable_ssh_root_login
-**Optional** This is a boolean, default is 'false', that configures sshd to allow root logins and bounces the service during kitchen create.
 ### scalr_use_role
 **Optional** Setting this option to an integer corresponding to a role id will trigger Role mode with the provided role identifier. If this option is not set, the driver will work in Image mode.
 ### scalr_server_image
@@ -31,6 +29,8 @@ Please read the [Driver usage][driver_usage] page for more details.
 **Required in Role mode** This is the identifier of the underlying cloud platform. Examples: "ec2", "gce", "openstack".
 ### scalr_location
 **Required in Role mode** This is a string corresponding to the cloud location used to create the instance. Example: "us-east-1"
+### scalr_permit_ssh_root_login
+**Optional** This is a boolean, default is 'false', that configures sshd to allow root logins and bounces the service during kitchen create. Useful if your base image does not allow ssh as root by default.
 ### scalr_base_farm_role
 **Optional** This is a yaml representation of a Farm Role Object as described in the APIv2 in Scalr. When kitchen-scalr creates a server, it merges this object with the previously-described parameters and creates the corresponding Farm Role. This section can be used to configure Security Groups, Networking etc... You can put the same parameters there as the ones you would get with a `scalr-ctl farm-roles get`.
 ### scalr_use_private_ip
@@ -77,6 +77,10 @@ example:
 3. Commit your changes (`git commit -am 'Added some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
+
+## <a name="thanks"></a> Thanks
+
+- @daxgames for contributing the 'permit_ssh_root_login' setting.
 
 ## <a name="authors"></a> Authors
 

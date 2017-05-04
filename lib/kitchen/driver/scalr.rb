@@ -45,8 +45,6 @@ module Kitchen
 
       default_config :scalr_api_url, ''
 
-      default_config :scalr_enable_ssh_root_login, false
-
       default_config :scalr_api_key_id, ''
 
       default_config :scalr_api_key_secret, ''
@@ -72,6 +70,8 @@ module Kitchen
       default_config :scalr_location, ''
 
       default_config :scalr_base_farm_role, Hash.new
+
+      default_config :scalr_permit_ssh_root_login, false
 
       default_config :scalr_use_private_ip, false
 
@@ -287,10 +287,9 @@ module Kitchen
           puts "Generating a key named %s" % [keyfileName]
           res = `yes | ssh-keygen -q -f #{keyfileName} -N ""`
           f = File.open(keyfileName + ".pub")
-          if config[:scalr_enable_ssh_root_login]
-            scriptData = Kitchen::Driver::SCALR_SSH_ROOT_ENABLE_SCRIPT % { :ssh_pub_key => f.read }
-          else
-            scriptData = Kitchen::Driver::SCALR_SSH_SCRIPT % { :ssh_pub_key => f.read }
+          scriptData = Kitchen::Driver::SCALR_SSH_SCRIPT % { :ssh_pub_key => f.read }
+          if config[:scalr_permit_ssh_root_login]
+            scriptData += Kitchen::Driver::SCALR_SSH_ROOT_PERMIT_SCRIPT
           end
           f.close
           state[:scriptOsType] = "linux"
