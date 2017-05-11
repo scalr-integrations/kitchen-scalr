@@ -6,8 +6,8 @@ require 'kitchen/driver/scalr_version'
 Gem::Specification.new do |spec|
   spec.name          = 'kitchen-scalr'
   spec.version       = Kitchen::Driver::SCALR_VERSION
-  spec.authors       = ['Mohammed HAWARI']
-  spec.email         = ['mohammed@hawari.fr']
+  spec.authors       = ['Mohammed HAWARI', 'Aloys AUGUSTIN']
+  spec.email         = ['mohammed@hawari.fr', 'aloys@scalr.com']
   spec.description   = %q{A Test Kitchen Driver for Scalr}
   spec.summary       = spec.description
   spec.homepage      = ''

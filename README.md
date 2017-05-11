@@ -94,8 +94,9 @@ Apache 2.0 (see [LICENSE][license])
 
 [author]:           https://github.com/momohawari
 [maintainer]:       https://github.com/aloysaugustin
-[issues]:           https://github.com/aloysaugustin/kitchen-scalr/issues
-[license]:          https://github.com/aloysaugustin/kitchen-scalr/blob/master/LICENSE
-[repo]:             https://github.com/aloysaugustin/kitchen-scalr
+[issues]:           https://github.com/scalr-integrations/kitchen-scalr/issues
+[license]:          https://github.com/scalr-integrations/kitchen-scalr/blob/master/LICENSE
+[repo]:             https://github.com/scalr-integrations/kitchen-scalr
 [driver_usage]:     http://kitchen.ci/docs/getting-started/adding-platform
 [chef_omnibus_dl]:  http://www.chef.io/chef/install/
+
