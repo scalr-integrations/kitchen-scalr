@@ -123,4 +123,10 @@ class ScalrAPI
 		return response['data']
 	end
 
+        #Edit items in API via PATCH
+        def edit(url, data)
+          response = self.request('PATCH', url, data)
+          return response['data']
+        end
+
 end
