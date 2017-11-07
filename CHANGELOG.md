@@ -1,3 +1,6 @@
+## 0.2.5
+* Compatibility with Scalr 7.7.5
+
 ## 0.2.4
 * Transfer to scalr_integrations
 
