@@ -13,9 +13,8 @@ module Kitchen
           "role" => {
             "id" => state[:roleId]
           },
-          {
-            "scaling" => {
-                "enabled" => true
+          "scaling" => {
+          	"enabled" => true
           }
         }
         farmRoleObject = farmRoleObject.deep_merge(config[:scalr_base_farm_role])
