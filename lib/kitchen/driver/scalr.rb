@@ -249,7 +249,6 @@ module Kitchen
           "category" => {
                           "id" => 1
                         },
-          "deprecated" => false,
           "description" => "test kitchen role",
           "name" => ruuid,
           "os" => {
