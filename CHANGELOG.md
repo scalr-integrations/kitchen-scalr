@@ -1,3 +1,6 @@
+## 0.2.6
+* Compatibility with Scalr 7.7.7
+
 ## 0.2.5
 * Compatibility with Scalr 7.7.5
 
