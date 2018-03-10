@@ -1,3 +1,6 @@
+## 0.2.7
+* Add scalr_global_variables setting
+
 ## 0.2.6
 * Compatibility with Scalr 7.7.7
 
