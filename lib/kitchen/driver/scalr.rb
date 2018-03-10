@@ -57,7 +57,7 @@ module Kitchen
 
       default_config :scalr_server_status_polling_period, 10
 
-      default_config :scalr_server_status_polling_timeout, 600
+      default_config :scalr_server_status_polling_timeout, 1800
 
       default_config :scalr_server_image, ''
 
@@ -74,6 +74,8 @@ module Kitchen
       default_config :scalr_permit_ssh_root_login, false
 
       default_config :scalr_use_private_ip, false
+
+      default_config :scalr_global_variables, Hash.new
 
       def create(state)
       	if config[:scalr_api_key_id]==''
@@ -96,41 +98,6 @@ module Kitchen
         response = scalr_api.create('/api/v1beta0/user/%s/farms/' % [config[:scalr_env_id] ], createFarmObject)
         state[:farmId] = response['id']
         puts 'Success: farmId is %d' % [state[:farmId]]
-        if !config[:scalr_global_variables].nil?
-          puts 'Creating global variables'
-          config[:scalr_global_variables].each do |key, val|
-            puts 'Checking for %s global variable' % [key]
-            begin
-              # this stdout hack is to handle fetchs for global vars that don't exist yet
-              $stdout = File.new("/dev/null", "w")
-              response = scalr_api.fetch('/api/v1beta0/user/%s/farms/%d/global-variables/%s' % [config[:scalr_env_id], state[:farmId], key])
-              $stdout = STDOUT
-            rescue => e
-              response = {}
-            end
-            if response['name'] == key.to_s
-              puts 'Global variable "%s" exists, updating with value "%s"...' % [key, val[:value]]
-              # edit global vars
-              globalVariableObjectEdit = {
-                'value' => val[:value]
-              }
-              response = scalr_api.edit('/api/v1beta0/user/%s/farms/%d/global-variables/%s' % [config[:scalr_env_id], state[:farmId], key], globalVariableObjectEdit)
-            else
-              puts 'Global variable "%s" not found, creating with value: "%s"...' % [key, val[:value]]
-              # create global vars
-              globalVariableObjectCreate = {
-                'category' => 'Uncategorized',
-                'name' => key,
-                'description' => '%s description' % [key],
-                'hidden' => false,
-                'locked' => false
-              }
-              globalVariableObject = globalVariableObjectCreate.deep_merge(val)
-              response = scalr_api.create('/api/v1beta0/user/%s/farms/%d/global-variables/' % [config[:scalr_env_id], state[:farmId]], globalVariableObject)
-            end
-          end
-          puts 'Global variables created/updated'
-        end
         if config[:scalr_use_role] == -1
           createCustomRole(scalr_api, state)
         else
@@ -144,6 +111,10 @@ module Kitchen
         response = scalr_api.create('/api/v1beta0/user/%s/farms/%d/farm-roles/' % [config[:scalr_env_id], state[:farmId]], farmRoleObject)
         puts "Farm Role created"
         state[:farmRoleId] = response['id']
+        # Creating the configured global variables
+        if !config[:scalr_global_variables].empty?
+          setup_global_vars(config, state, scalr_api)
+        end
         #Start the farm now
         response = scalr_api.post('/api/v1beta0/user/%s/farms/%d/actions/launch/' % [config[:scalr_env_id], state[:farmId]], {})
         state[:farmLaunched] = 1
@@ -309,6 +280,50 @@ module Kitchen
         puts "RoleImage association created"
       end
 
+      def setup_global_vars(config, state, scalr_api)
+        puts 'Listing existing global variables'
+        # Start by listing the GVs at the Farm scope to know which GVs exist
+        gv_list = scalr_api.list('/api/v1beta0/user/%s/farms/%d/global-variables/' % [config[:scalr_env_id], state[:farmId]])
+        existing_gvs = {}
+        gv_list.each do |gv|
+          existing_gvs[gv['name']] = gv
+        end
+        config[:scalr_global_variables].each do |key, val|
+          if existing_gvs.has_key? key.to_s
+            puts 'Global variable "%s" exists, setting value "%s"...' % [key, val[:value]]
+            # set global var value
+            if val[:scope] and val[:scope].downcase == 'farm' then
+              gv_set_url = '/api/v1beta0/user/%s/farms/%d/global-variables/%s' % [config[:scalr_env_id], state[:farmId], key]
+            else
+              gv_set_url = '/api/v1beta0/user/%s/farm-roles/%d/global-variables/%s' % [config[:scalr_env_id], state[:farmRoleId], key]
+            end
+            globalVariableObjectEdit = {
+              'value' => val[:value]
+            }
+            response = scalr_api.edit(gv_set_url, globalVariableObjectEdit)
+          else
+            puts 'Global variable "%s" not found, creating with value: "%s"...' % [key, val[:value]]
+            # create global var
+            if val[:scope] and val[:scope].downcase == 'farm' then
+              gv_create_url = '/api/v1beta0/user/%s/farms/%d/global-variables/' % [config[:scalr_env_id], state[:farmId], key]
+            else
+              gv_create_url = '/api/v1beta0/user/%s/farm-roles/%d/global-variables/' % [config[:scalr_env_id], state[:farmRoleId], key]
+            end
+            val.delete(:scope)
+            globalVariableDefaults = {
+              'category' => '',
+              'name' => key,
+              'description' => '',
+              'hidden' => false,
+              'locked' => false
+            }
+            globalVariableObjectCreate = globalVariableDefaults.deep_merge(val)
+            response = scalr_api.create(gv_create_url, globalVariableObjectCreate)
+          end
+        end
+        puts 'Global variables created/updated'
+      end
+
       def setup_credentials(scalr_api,state)
         response = scalr_api.list('/api/v1beta0/user/%s/farms/%d/servers/' % [config[:scalr_env_id], state[:farmId]])
         state[:serverId] = response[0]['id']
@@ -346,9 +361,9 @@ module Kitchen
         puts "Script created with id %s" % [state[:scriptId]]
         #Now create a script version with the actual body
         puts "Creating a script version"
-        puts "Script content:"
-        puts scriptData
-        puts "End of script content"
+        # puts "Script content:"
+        # puts scriptData
+        # puts "End of script content"
         response = scalr_api.create('/api/v1beta0/user/%s/scripts/%d/script-versions/' % [config[:scalr_env_id], state[:scriptId]],
         {
           'body' => scriptData,
