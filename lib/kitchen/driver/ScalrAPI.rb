@@ -74,10 +74,10 @@ class ScalrAPI
 				:payload  => body
 			)
 		rescue RestClient::ExceptionWithResponse => e
-     		puts "Scalr server returned an error: "
-     		puts e.response
-     		raise e
- 		end
+			puts "Scalr server returned an error: "
+			puts e.response
+			raise e
+		end
 		if response == ""
 			response = "{}"
 		end
@@ -120,6 +120,12 @@ class ScalrAPI
 	#Edit items in API
 	def post(url, data)
 		response = self.request('POST', url, data)
+		return response['data']
+	end
+
+	#Edit items in API via PATCH
+	def edit(url, data)
+		response = self.request('PATCH', url, data)
 		return response['data']
 	end
 
