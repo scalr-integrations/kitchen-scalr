@@ -45,7 +45,7 @@ Please read the [Driver usage][driver_usage] page for more details.
 **Required in Role mode** This is a string corresponding to the cloud location used to create the instance. Example: "us-east-1"
 
 ### scalr_global_variables
-**Optional** This is a dictionary of Scalr Global Variables to set or create. Global Variables in this dictionary are created if they don't exist in Scalr, otherwise their value is set. By default these global variables are set at the Farm Role scope, if you need to set one at the Farm scope, add `scope: Farm` the the description of the Global Variable. Additional Global Variable settings corresponding to the definition of a [Global Variable object](https://api-explorer.scalr.com/definitions/G/GlobalVariable.html) in Scalr's APIv2 can be passed for each Global Variable. These settings are used only when the global variable is created, they are ignored if it is only set.
+**Optional** This is a dictionary of Scalr Global Variables to set or create. Global Variables in this dictionary are created if they don't exist in Scalr, otherwise their value is set. By default these global variables are set at the Farm Role scope, if you need to set one at the Farm scope, add `scope: Farm` to its description. Additional Global Variable settings corresponding to the definition of a [Global Variable object](https://api-explorer.scalr.com/definitions/G/GlobalVariable.html) in Scalr's APIv2 can be passed for each Global Variable. These settings are used only when the global variable is created, they are ignored if it is only set.
 
 ### scalr_permit_ssh_root_login
 **Optional** This is a boolean, default is 'false', that configures sshd to allow root logins and bounces the service during kitchen create. Useful if your base image does not allow ssh as root by default.
@@ -70,9 +70,9 @@ verifier:
   name: inspec
 
 platforms:
-  - name: ubuntu-14.04
+  - name: ubuntu-16.04
     driver:
-      scalr_api_url: 'http://my.scalr.com'
+      scalr_api_url: 'https://my.scalr.com'
       scalr_env_id: '2'
       scalr_project_id: '30c59dba-fc9b-4d0f-83ec-4b5043b12f72'
       scalr_server_instanceType: 'm3.medium'
@@ -80,6 +80,14 @@ platforms:
       scalr_platform: 'ec2'
       scalr_location: 'us-east-1'
       scalr_base_farm_role:   # Add platform-specific Farm Role settings
+        cloudFeatures:
+          type: AwsCloudFeatures
+          ebsOptimized: false
+        networking:
+          networks:
+            - id: vpc-xxxxxxxx
+          subnets:
+            - id: subnet-xxxxxxxx
         security:
           securityGroups:
             - id: 'sg-3b3d9153'
@@ -88,11 +96,11 @@ platforms:
       scalr_global_variables:
         My_Global_Variable:   # Set or create a global variable named My_Global_Variable
           value: Hello World
-        My_Secret_GV:         # Create a GV with additional settings
+        My_Secret_GV:         # Create a Global Variable with additional settings
           value: access-token
           category: Monitoring
           hidden: true
-        My_Farm_Scope_GV:     # Create a GV at the Farm scope
+        My_Farm_Scope_GV:     # Set a Global Variable at the Farm scope
           value: Farm name
           scope: Farm
 ```
